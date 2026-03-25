@@ -1,0 +1,269 @@
+/*
+Theme Name: Quimbanda-JP
+Theme URI: https://example.com/quimbanda-jp
+Author: Equipe Quimbanda-JP
+Description: Tema WordPress minimalista com foco em SEO técnico, performance e acessibilidade.
+Version: 1.0.1
+Text Domain: quimbanda-jp
+*/
+
+@font-face {
+    font-family: 'FingerPaint';
+    src: url('Assets/Fonts/FingerPaint.ttf') format('truetype');
+    font-display: swap;
+}
+
+:root {
+    --qjp-bg: #121212;
+    --qjp-text: #E0E0E0;
+    --qjp-accent: #8B0000;
+    --qjp-link: #ff6b6b;
+    --qjp-surface: #1a1a1a;
+    --qjp-border: rgba(224, 224, 224, 0.12);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--qjp-bg);
+    color: var(--qjp-text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+}
+
+a {
+    color: var(--qjp-link);
+    text-decoration: none;
+}
+
+a:hover,
+a:focus {
+    text-decoration: underline;
+}
+
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.site-title {
+    font-family: 'FingerPaint', 'Segoe UI', Arial, sans-serif;
+    letter-spacing: 0.4px;
+    margin-top: 0;
+}
+
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(18, 18, 18, 0.95);
+    border-bottom: 1px solid var(--qjp-border);
+    backdrop-filter: blur(6px);
+}
+
+.header-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.branding {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.branding .custom-logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+}
+
+.site-title {
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    margin: 0;
+}
+
+.site-title a {
+    color: var(--qjp-text);
+}
+
+.site-title a:hover,
+.site-title a:focus {
+    color: var(--qjp-text);
+}
+
+.main-nav ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.main-nav a {
+    display: inline-block;
+    padding: 0.4rem 0.7rem;
+    border-radius: 999px;
+    transition: background-color 0.2s ease;
+}
+
+.main-nav a:hover,
+.main-nav a:focus {
+    background: var(--qjp-accent);
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.content-wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.section-title {
+    margin-bottom: 1rem;
+}
+
+.updates-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.post-card {
+    background: var(--qjp-surface);
+    border: 1px solid var(--qjp-border);
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.post-thumbnail img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.post-content {
+    padding: 1rem;
+}
+
+.post-meta {
+    opacity: 0.85;
+    font-size: 0.9rem;
+}
+
+.button,
+.read-more,
+.desktop-whatsapp a,
+.whatsapp-float {
+    background: var(--qjp-accent);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+    display: inline-block;
+    font-weight: 600;
+}
+
+.button:hover,
+.read-more:hover,
+.desktop-whatsapp a:hover,
+.whatsapp-float:hover {
+    filter: brightness(1.1);
+    text-decoration: none;
+}
+
+.pagination {
+    margin: 1.5rem 0;
+}
+
+.footer-widgets {
+    border-top: 1px solid var(--qjp-border);
+    margin-top: 2rem;
+    padding: 2rem 1rem;
+}
+
+.footer-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.footer-block {
+    background: var(--qjp-surface);
+    border: 1px solid var(--qjp-border);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.site-footer {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.whatsapp-float {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 999;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.desktop-whatsapp {
+    display: none;
+}
+
+@media (min-width: 700px) {
+    .updates-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .footer-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    .updates-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .footer-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .desktop-whatsapp {
+        display: inline-block;
+    }
+
+    .whatsapp-float {
+        display: none;
+    }
+}
