@@ -27,10 +27,11 @@ function qjp_theme_setup()
         'script',
     ]);
     add_theme_support('custom-logo', [
-        'height'      => 80,
-        'width'       => 80,
+        'height'      => 120,
+        'width'       => 120,
         'flex-height' => true,
         'flex-width'  => true,
+        'unlink-homepage-logo' => false,
     ]);
 
     register_nav_menus([
@@ -58,23 +59,6 @@ function qjp_content_width()
 add_action('after_setup_theme', 'qjp_content_width', 0);
 
 /**
- * Registra área de widget para formulário de contato.
- */
-function qjp_register_sidebars()
-{
-    register_sidebar([
-        'name'          => __('Área de Contato (WPForms)', 'quimbanda-jp'),
-        'id'            => 'qjp-contact-form',
-        'description'   => __('Adicione aqui o widget/shortcode do formulário de contato.', 'quimbanda-jp'),
-        'before_widget' => '<div id="%1$s" class="widget %2$s">',
-        'after_widget'  => '</div>',
-        'before_title'  => '<h3 class="widget-title">',
-        'after_title'   => '</h3>',
-    ]);
-}
-add_action('widgets_init', 'qjp_register_sidebars');
-
-/**
  * Sanitiza texto de bio (máximo 500 caracteres).
  */
 function qjp_sanitize_bio($value)
@@ -97,6 +81,27 @@ function qjp_customize_register($wp_customize)
         'title'    => __('Quimbanda-JP: Cores', 'quimbanda-jp'),
         'priority' => 30,
     ]);
+    // Cor dos blocos (cards, footer-blocks)
+    $wp_customize->add_setting('qjp_block_color', [
+        'default'           => '#1a1a1a',
+        'sanitize_callback' => 'sanitize_hex_color',
+    ]);
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'qjp_block_color_control', [
+        'label'    => __('Cor dos Blocos', 'quimbanda-jp'),
+        'section'  => 'qjp_colors_section',
+        'settings' => 'qjp_block_color',
+    ]));
+
+    // Cor do texto dos blocos
+    $wp_customize->add_setting('qjp_block_text_color', [
+        'default'           => '#E0E0E0',
+        'sanitize_callback' => 'sanitize_hex_color',
+    ]);
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'qjp_block_text_color_control', [
+        'label'    => __('Cor do Texto dos Blocos', 'quimbanda-jp'),
+        'section'  => 'qjp_colors_section',
+        'settings' => 'qjp_block_text_color',
+    ]));
 
     $wp_customize->add_setting('qjp_background_color', [
         'default'           => '#121212',
@@ -215,7 +220,10 @@ function qjp_customizer_css_variables()
     $text   = get_theme_mod('qjp_text_color', '#E0E0E0');
     $accent = get_theme_mod('qjp_accent_color', '#8B0000');
 
-    $css = ":root{--qjp-bg: {$bg}; --qjp-text: {$text}; --qjp-accent: {$accent};}";
+    $block      = get_theme_mod('qjp_block_color', '#1a1a1a');
+    $block_text = get_theme_mod('qjp_block_text_color', '#E0E0E0');
+
+    $css = ":root{--qjp-bg: {$bg}; --qjp-text: {$text}; --qjp-accent: {$accent}; --qjp-block: {$block}; --qjp-block-text: {$block_text};}";
     wp_add_inline_style('qjp-style', $css);
 }
 add_action('wp_enqueue_scripts', 'qjp_customizer_css_variables', 20);
@@ -255,10 +263,3 @@ function qjp_add_whatsapp_to_menu($items, $args)
 }
 add_filter('wp_nav_menu_items', 'qjp_add_whatsapp_to_menu', 10, 2);
 
-/**
- * Verifica se WPForms está ativo.
- */
-function qjp_is_wpforms_active()
-{
-    return class_exists('WPForms') || function_exists('wpforms');
-}

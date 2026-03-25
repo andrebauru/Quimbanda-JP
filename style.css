@@ -24,6 +24,8 @@ Tags: wordpress, tema, seo, acessibilidade, performance, custom-theme
     --qjp-accent: #8B0000;
     --qjp-link: #ff6b6b;
     --qjp-surface: #1a1a1a;
+    --qjp-block: #1a1a1a;
+    --qjp-block-text: #E0E0E0;
     --qjp-border: rgba(224, 224, 224, 0.12);
 }
 
@@ -193,7 +195,8 @@ h6,
 }
 
 .post-card {
-    background: var(--qjp-surface);
+    background: var(--qjp-block);
+    color: var(--qjp-block-text);
     border: 1px solid var(--qjp-border);
     border-radius: 12px;
     overflow: hidden;
@@ -256,7 +259,8 @@ h6,
 }
 
 .footer-block {
-    background: var(--qjp-surface);
+    background: var(--qjp-block);
+    color: var(--qjp-block-text);
     border: 1px solid var(--qjp-border);
     border-radius: 10px;
     padding: 1rem;
