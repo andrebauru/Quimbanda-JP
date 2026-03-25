@@ -5,7 +5,7 @@ Theme URI: https://andretsc.dev
 Author: Andre Silva TsC
 Author URI: https://andretsc.dev
 Description: Tema WordPress personalizado Quimbanda-JP com foco em SEO técnico, performance, acessibilidade e identidade visual exclusiva.
-Version: 1.0.3
+Version: 1.1.1
 License: GNU General Public License v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: quimbanda-jp
@@ -26,6 +26,8 @@ Tags: wordpress, tema, seo, acessibilidade, performance, custom-theme
     --qjp-surface: #1a1a1a;
     --qjp-block: #1a1a1a;
     --qjp-block-text: #E0E0E0;
+    --qjp-text-outline-color: #000000;
+    --qjp-text-outline-size: 0px;
     --qjp-border: rgba(224, 224, 224, 0.12);
 }
 
@@ -148,6 +150,30 @@ h6,
 .site-title a:hover,
 .site-title a:focus {
     color: var(--qjp-text);
+}
+
+/* Contorno opcional para qualquer item via classe */
+.qjp-outline,
+.has-qjp-outline {
+    -webkit-text-stroke: var(--qjp-text-outline-size) var(--qjp-text-outline-color);
+    paint-order: stroke fill;
+}
+
+/* Contorno global (ativado no Customizer) */
+.qjp-global-outline h1,
+.qjp-global-outline h2,
+.qjp-global-outline h3,
+.qjp-global-outline h4,
+.qjp-global-outline h5,
+.qjp-global-outline h6,
+.qjp-global-outline p,
+.qjp-global-outline a,
+.qjp-global-outline li,
+.qjp-global-outline span,
+.qjp-global-outline label,
+.qjp-global-outline button {
+    -webkit-text-stroke: var(--qjp-text-outline-size) var(--qjp-text-outline-color);
+    paint-order: stroke fill;
 }
 
 .custom-logo-link img[src$=".png"],

@@ -13,12 +13,14 @@ get_header();
 <main id="main" class="content-wrap" role="main">
     <?php
     // Exibir o post mais recente completo
+    $qjp_latest_id = 0;
     $qjp_latest = new WP_Query([
         'posts_per_page' => 1,
         'post_status'    => 'publish',
     ]);
     if ($qjp_latest->have_posts()) :
         while ($qjp_latest->have_posts()) : $qjp_latest->the_post();
+            $qjp_latest_id = get_the_ID();
             ?>
             <article id="post-<?php the_ID(); ?>" <?php post_class('post-card post-featured'); ?> itemscope itemtype="https://schema.org/BlogPosting">
                 <header>
@@ -58,7 +60,7 @@ get_header();
             'posts_per_page' => get_option('posts_per_page'),
             'post_status'    => 'publish',
             'paged'          => $paged,
-            'offset'         => 1,
+            'post__not_in'   => $qjp_latest_id ? [$qjp_latest_id] : [],
         ]);
         if ($qjp_grid->have_posts()) : ?>
             <div class="updates-grid">

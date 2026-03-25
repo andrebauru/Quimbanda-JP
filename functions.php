@@ -64,11 +64,24 @@ add_action('after_setup_theme', 'qjp_content_width', 0);
 function qjp_sanitize_bio($value)
 {
     $value = sanitize_textarea_field($value);
-    if (mb_strlen($value) > 500) {
-        $value = mb_substr($value, 0, 500);
+
+    if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+        if (mb_strlen($value) > 500) {
+            $value = mb_substr($value, 0, 500);
+        }
+    } elseif (strlen($value) > 500) {
+        $value = substr($value, 0, 500);
     }
 
     return $value;
+}
+
+/**
+ * Sanitiza checkbox.
+ */
+function qjp_sanitize_checkbox($value)
+{
+    return (bool) $value;
 }
 
 /**
@@ -135,6 +148,48 @@ function qjp_customize_register($wp_customize)
         'section'  => 'qjp_colors_section',
         'settings' => 'qjp_accent_color',
     ]));
+
+    $wp_customize->add_setting('qjp_text_outline_color', [
+        'default'           => '#000000',
+        'sanitize_callback' => 'sanitize_hex_color',
+    ]);
+
+    $wp_customize->add_control(new WP_Customize_Color_Control($wp_customize, 'qjp_text_outline_color_control', [
+        'label'    => __('Cor do Contorno do Texto', 'quimbanda-jp'),
+        'section'  => 'qjp_colors_section',
+        'settings' => 'qjp_text_outline_color',
+    ]));
+
+    $wp_customize->add_setting('qjp_text_outline_size', [
+        'default'           => 0,
+        'sanitize_callback' => 'absint',
+    ]);
+
+    $wp_customize->add_control('qjp_text_outline_size_control', [
+        'label'       => __('Espessura do Contorno (px)', 'quimbanda-jp'),
+        'description' => __('Use 0 para desativar.', 'quimbanda-jp'),
+        'type'        => 'number',
+        'input_attrs' => [
+            'min'  => 0,
+            'max'  => 4,
+            'step' => 1,
+        ],
+        'section'     => 'qjp_colors_section',
+        'settings'    => 'qjp_text_outline_size',
+    ]);
+
+    $wp_customize->add_setting('qjp_global_text_outline', [
+        'default'           => false,
+        'sanitize_callback' => 'qjp_sanitize_checkbox',
+    ]);
+
+    $wp_customize->add_control('qjp_global_text_outline_control', [
+        'label'       => __('Aplicar contorno global nos textos', 'quimbanda-jp'),
+        'description' => __('Ativa o contorno em títulos, links e textos do tema.', 'quimbanda-jp'),
+        'type'        => 'checkbox',
+        'section'     => 'qjp_colors_section',
+        'settings'    => 'qjp_global_text_outline',
+    ]);
 
     // Seção de contato.
     $wp_customize->add_section('qjp_contact_section', [
@@ -222,11 +277,26 @@ function qjp_customizer_css_variables()
 
     $block      = get_theme_mod('qjp_block_color', '#1a1a1a');
     $block_text = get_theme_mod('qjp_block_text_color', '#E0E0E0');
+    $outline    = get_theme_mod('qjp_text_outline_color', '#000000');
+    $outline_px = absint(get_theme_mod('qjp_text_outline_size', 0));
 
-    $css = ":root{--qjp-bg: {$bg}; --qjp-text: {$text}; --qjp-accent: {$accent}; --qjp-block: {$block}; --qjp-block-text: {$block_text};}";
+    $css = ":root{--qjp-bg: {$bg}; --qjp-text: {$text}; --qjp-accent: {$accent}; --qjp-block: {$block}; --qjp-block-text: {$block_text}; --qjp-text-outline-color: {$outline}; --qjp-text-outline-size: {$outline_px}px;}";
     wp_add_inline_style('qjp-style', $css);
 }
 add_action('wp_enqueue_scripts', 'qjp_customizer_css_variables', 20);
+
+/**
+ * Adiciona classe de contorno global no body.
+ */
+function qjp_body_classes($classes)
+{
+    if (get_theme_mod('qjp_global_text_outline', false)) {
+        $classes[] = 'qjp-global-outline';
+    }
+
+    return $classes;
+}
+add_filter('body_class', 'qjp_body_classes');
 
 /**
  * Retorna o link do WhatsApp formatado.
@@ -248,7 +318,7 @@ function qjp_get_whatsapp_link()
  */
 function qjp_add_whatsapp_to_menu($items, $args)
 {
-    if (!isset($args->theme_location) || 'primary' !== $args->theme_location) {
+    if (!is_object($args) || empty($args->theme_location) || 'primary' !== $args->theme_location) {
         return $items;
     }
 

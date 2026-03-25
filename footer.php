@@ -46,7 +46,7 @@ $latest_post = get_posts([
         </aside>
 
         <aside class="footer-block footer-latest" aria-labelledby="footer-latest-title">
-            <h3 id="footer-latest-title"><?php esc_html_e('Latest', 'quimbanda-jp'); ?></h3>
+            <h3 id="footer-latest-title"><?php esc_html_e('Recentes', 'quimbanda-jp'); ?></h3>
             <?php if (!empty($latest_post)) : ?>
                 <?php
                 $post = $latest_post[0];
@@ -62,17 +62,6 @@ $latest_post = get_posts([
         </aside>
     </div>
 </section>
-
-<?php if (function_exists('qjp_is_wpforms_active') && qjp_is_wpforms_active()) : ?>
-    <section class="content-wrap" aria-labelledby="qjp-contact-title">
-        <h2 id="qjp-contact-title"><?php esc_html_e('Contato', 'quimbanda-jp'); ?></h2>
-        <?php if (is_active_sidebar('qjp-contact-form')) : ?>
-            <?php dynamic_sidebar('qjp-contact-form'); ?>
-        <?php else : ?>
-            <p><?php esc_html_e('WPForms ativo. Adicione o formulário na área de widgets "Área de Contato (WPForms)".', 'quimbanda-jp'); ?></p>
-        <?php endif; ?>
-    </section>
-<?php endif; ?>
 
 <footer class="site-footer" role="contentinfo">
     <p>
