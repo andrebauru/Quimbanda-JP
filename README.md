@@ -1,4 +1,7 @@
+
 # Quimbanda-JP (Tema WordPress)
+
+![Preview do tema](screenshot.png)
 
 ## Estrutura recomendada
 
@@ -28,3 +31,7 @@ WordPress já gera sitemap automático em:
 - `/wp-sitemap.xml`
 
 O arquivo `sitemap.xml` deste tema é apenas um modelo estático.
+
+---
+
+Desenvolvido por [Andre Silva TsC](https://andretsc.dev)
