@@ -311,6 +311,25 @@ function qjp_customize_register($wp_customize)
         'mime_type'   => 'video',
     ]));
 
+    // Opacidade/Transparência da imagem de fundo
+    $wp_customize->add_setting('qjp_background_opacity', [
+        'default'           => 100,
+        'sanitize_callback' => 'absint',
+    ]);
+
+    $wp_customize->add_control('qjp_background_opacity_control', [
+        'label'       => __('Opacidade da Imagem de Fundo (%)', 'quimbanda-jp'),
+        'description' => __('100 = totalmente opaco, 0 = totalmente transparente. Afeta apenas imagens PNG/GIF.', 'quimbanda-jp'),
+        'type'        => 'range',
+        'section'     => 'qjp_background_section',
+        'settings'    => 'qjp_background_opacity',
+        'input_attrs' => [
+            'min'  => 0,
+            'max'  => 100,
+            'step' => 5,
+        ],
+    ]);
+
     // Seção de cores.
     $wp_customize->add_section('qjp_colors_section', [
         'title'    => __('Quimbanda-JP: Cores', 'quimbanda-jp'),
@@ -503,11 +522,20 @@ function qjp_customizer_css_variables()
     $outline_px = absint(get_theme_mod('qjp_text_outline_size', 0));
     $bg_type    = get_theme_mod('qjp_background_media_type', 'none');
     $bg_image   = get_theme_mod('qjp_background_image', '');
+    $bg_opacity = absint(get_theme_mod('qjp_background_opacity', 100));
+    
+    // Converter opacidade de 0-100 para 0-1 (CSS opacity)
+    $opacity_decimal = $bg_opacity / 100;
 
     $css = ":root{--qjp-bg: {$bg}; --qjp-text: {$text}; --qjp-accent: {$accent}; --qjp-block: {$block}; --qjp-block-text: {$block_text}; --qjp-text-outline-color: {$outline}; --qjp-text-outline-size: {$outline_px}px;}";
 
     if ('image' === $bg_type && !empty($bg_image)) {
-        $css .= "body{background-image:url('" . esc_url_raw($bg_image) . "');background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed;}";
+        $css .= "body{background-image:url('" . esc_url_raw($bg_image) . "');background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed;opacity:" . $opacity_decimal . ";}";
+        
+        // Se opacidade não for 100%, adiciona overlay para melhorar legibilidade
+        if ($bg_opacity < 100) {
+            $css .= "body::before{content:'';position:fixed;inset:0;background:rgba(18,18,18," . (1 - $opacity_decimal) . ");z-index:-1;pointer-events:none;}";
+        }
     }
 
     wp_add_inline_style('qjp-style', $css);
@@ -560,15 +588,33 @@ add_action('wp_body_open', 'qjp_render_background_video', 5);
 
 /**
  * Retorna o link do WhatsApp formatado.
+ *
+ * Espera número no formato: 5511999999999 ou +5511999999999
  */
 function qjp_get_whatsapp_link()
 {
     $number = get_theme_mod('qjp_whatsapp_number', '');
-    $number = preg_replace('/\D+/', '', (string) $number);
-
+    
     if (empty($number)) {
         return '';
     }
+
+    // Remove espaços
+    $number = trim((string) $number);
+    
+    // Se começar com +, mantém o +; se começar com 55, está ok
+    // Se começar com números simples, trata como +55 (Brasil)
+    $number = preg_replace('/[^\d+]/', '', $number);
+    
+    // Garante que tem o + no início ou converte para +55 se brasileiro
+    if (substr($number, 0, 1) !== '+' && substr($number, 0, 2) !== '55') {
+        // Se for só dígitos simples sem +55, assume Brasil
+        $number = '55' . $number;
+    } elseif (substr($number, 0, 1) !== '+' && substr($number, 0, 2) === '55') {
+        // Já começa com 55, mantém como está (wa.me pode usar com ou sem +)
+    }
+
+    qjp_log('Link WhatsApp gerado', 'info', ['number' => $number]);
 
     return 'https://wa.me/' . $number;
 }
