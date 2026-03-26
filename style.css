@@ -5,7 +5,7 @@ Theme URI: https://andretsc.dev
 Author: Andre Silva TsC
 Author URI: https://andretsc.dev
 Description: Tema WordPress personalizado Quimbanda-JP com foco em SEO técnico, performance, acessibilidade e identidade visual exclusiva.
-Version: 1.1.1
+Version: 1.2.1
 License: GNU General Public License v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: quimbanda-jp
@@ -46,6 +46,28 @@ body {
     color: var(--qjp-text);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
+}
+
+body.qjp-has-bg-video {
+    background: var(--qjp-bg);
+}
+
+.qjp-bg-video {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+    pointer-events: none;
+}
+
+.qjp-bg-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: -1;
+    pointer-events: none;
 }
 
 a {
