@@ -529,12 +529,29 @@ function qjp_customizer_css_variables()
 
     $css = ":root{--qjp-bg: {$bg}; --qjp-text: {$text}; --qjp-accent: {$accent}; --qjp-block: {$block}; --qjp-block-text: {$block_text}; --qjp-text-outline-color: {$outline}; --qjp-text-outline-size: {$outline_px}px;}";
 
+    qjp_log('CSS Customizer aplicado', 'info', [
+        'bg_type' => $bg_type,
+        'bg_image' => !empty($bg_image) ? 'sim' : 'não',
+        'opacity' => $bg_opacity,
+    ]);
+
     if ('image' === $bg_type && !empty($bg_image)) {
-        $css .= "body{background-image:url('" . esc_url_raw($bg_image) . "');background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed;opacity:" . $opacity_decimal . ";}";
+        // Usar ::before para backgroundImage com opacidade, sem afetar conteúdo
+        $css .= "body::before{content:'';position:fixed;inset:0;background-image:url('" . esc_url_raw($bg_image) . "');background-size:cover;background-position:center;background-repeat:no-repeat;background-attachment:fixed;opacity:" . $opacity_decimal . ";z-index:-2;pointer-events:none;}";
         
-        // Se opacidade não for 100%, adiciona overlay para melhorar legibilidade
+        qjp_log('Background image aplicado', 'info', [
+            'url' => $bg_image,
+            'opacity' => $opacity_decimal,
+        ]);
+
+        // Se opacidade não for 100%, adiciona overlay adicional para melhorar legibilidade
         if ($bg_opacity < 100) {
-            $css .= "body::before{content:'';position:fixed;inset:0;background:rgba(18,18,18," . (1 - $opacity_decimal) . ");z-index:-1;pointer-events:none;}";
+            $overlay_opacity = (1 - $opacity_decimal) * 0.3; // 30% de escurecimento
+            $css .= "body::after{content:'';position:fixed;inset:0;background:rgba(18,18,18," . $overlay_opacity . ");z-index:-1;pointer-events:none;}";
+            
+            qjp_log('Overlay de escurecimento adicionado', 'info', [
+                'overlay_opacity' => $overlay_opacity,
+            ]);
         }
     }
 
