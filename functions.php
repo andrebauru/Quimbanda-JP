@@ -196,6 +196,10 @@ function qjp_theme_setup()
         'flex-width'  => true,
         'unlink-homepage-logo' => false,
     ]);
+    add_theme_support('customize-selective-refresh-widgets');
+    add_theme_support('wp-block-styles');
+    add_theme_support('responsive-embeds');
+    add_theme_support('align-wide');
 
     register_nav_menus([
         'primary' => __('Menu Principal', 'quimbanda-jp'),
@@ -204,11 +208,32 @@ function qjp_theme_setup()
 add_action('after_setup_theme', 'qjp_theme_setup');
 
 /**
+ * Registra áreas de widgets.
+ */
+function qjp_widgets_init()
+{
+    register_sidebar([
+        'name'          => __('Barra lateral principal', 'quimbanda-jp'),
+        'id'            => 'sidebar-1',
+        'description'   => __('Área de widgets principal para plugins e blocos.', 'quimbanda-jp'),
+        'before_widget' => '<section id="%1$s" class="widget footer-block %2$s">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h3 class="widget-title">',
+        'after_title'   => '</h3>',
+    ]);
+}
+add_action('widgets_init', 'qjp_widgets_init');
+
+/**
  * Enfileira estilos do tema.
  */
 function qjp_enqueue_assets()
 {
     wp_enqueue_style('qjp-style', get_stylesheet_uri(), [], wp_get_theme()->get('Version'));
+
+    if (is_singular() && comments_open() && get_option('thread_comments')) {
+        wp_enqueue_script('comment-reply');
+    }
 }
 add_action('wp_enqueue_scripts', 'qjp_enqueue_assets');
 
@@ -571,6 +596,10 @@ function qjp_body_classes($classes)
     $bg_type = get_theme_mod('qjp_background_media_type', 'none');
     if ('video' === $bg_type) {
         $classes[] = 'qjp-has-bg-video';
+    }
+
+    if ('image' === $bg_type && get_theme_mod('qjp_background_image', '')) {
+        $classes[] = 'qjp-has-bg-image';
     }
 
     return $classes;

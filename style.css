@@ -49,7 +49,11 @@ body {
 }
 
 body.qjp-has-bg-video {
-    background: var(--qjp-bg);
+    background: transparent;
+}
+
+body.qjp-has-bg-image {
+    background: transparent;
 }
 
 .qjp-bg-video {
