@@ -8,6 +8,115 @@ if (!defined('ABSPATH')) {
 }
 
 /**
+ * =============================
+ * Sistema de Debug e Logging
+ * =============================
+ */
+
+if (!defined('QJP_DEBUG_LOG_FILE')) {
+    define('QJP_DEBUG_LOG_FILE', WP_CONTENT_DIR . '/qjp-theme-debug.log');
+}
+
+if (!defined('QJP_ENABLE_DEBUG')) {
+    define('QJP_ENABLE_DEBUG', defined('WP_DEBUG') && WP_DEBUG);
+}
+
+/**
+ * Registra erro/evento no arquivo de log do tema.
+ *
+ * @param string $message Mensagem a registrar.
+ * @param string $level   Nível (info, warning, error).
+ * @param mixed  $data    Dados adicionais para debug (opcional).
+ */
+function qjp_log($message = '', $level = 'info', $data = null)
+{
+    if (!QJP_ENABLE_DEBUG) {
+        return;
+    }
+
+    $log_entry = sprintf(
+        "[%s] [%s] %s\n",
+        gmdate('Y-m-d H:i:s'),
+        strtoupper($level),
+        $message
+    );
+
+    if (null !== $data) {
+        $log_entry .= "Data: " . wp_json_encode($data) . "\n";
+    }
+
+    $log_entry .= "---\n";
+
+    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_operations_file_put_contents
+    @file_put_contents(QJP_DEBUG_LOG_FILE, $log_entry, FILE_APPEND);
+}
+
+/**
+ * Limpa o arquivo de log.
+ */
+function qjp_clear_debug_log()
+{
+    if (!current_user_can('manage_options')) {
+        return false;
+    }
+
+    if (file_exists(QJP_DEBUG_LOG_FILE)) {
+        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+        @unlink(QJP_DEBUG_LOG_FILE);
+    }
+
+    return true;
+}
+
+/**
+ * Retorna conteúdo do log para exibição no painel.
+ *
+ * @return string Conteúdo do arquivo de log.
+ */
+function qjp_get_debug_log()
+{
+    if (!current_user_can('manage_options')) {
+        return '';
+    }
+
+    if (!file_exists(QJP_DEBUG_LOG_FILE)) {
+        return __('Nenhum evento registrado no log.', 'quimbanda-jp');
+    }
+
+    // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_operations_file_get_contents
+    $content = @file_get_contents(QJP_DEBUG_LOG_FILE);
+
+    if (false === $content) {
+        return __('Erro ao ler o arquivo de log.', 'quimbanda-jp');
+    }
+
+    // Limita a última 500 linhas para melhor performance
+    $lines = explode("\n", $content);
+    $lines = array_slice($lines, -500);
+
+    return implode("\n", $lines);
+}
+
+/**
+ * Hook para registrar erros de plugins/temas conflitantes.
+ */
+function qjp_check_plugin_conflicts()
+{
+    if (!function_exists('get_plugins')) {
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+    }
+
+    $all_plugins = get_plugins();
+    $active_plugins = get_option('active_plugins', []);
+
+    qjp_log('Plugins ativos detectados', 'info', [
+        'total' => count($active_plugins),
+        'plugins' => array_keys(array_intersect_key($all_plugins, array_flip($active_plugins))),
+    ]);
+}
+add_action('admin_init', 'qjp_check_plugin_conflicts', 100);
+
+/**
  * Configurações iniciais do tema.
  */
 function qjp_theme_setup()
@@ -415,16 +524,39 @@ function qjp_get_whatsapp_link()
  */
 function qjp_add_whatsapp_to_menu($items, $args)
 {
-    if (!is_object($args) || empty($args->theme_location) || 'primary' !== $args->theme_location) {
+    // Registra tentativa de adição de item ao menu
+    qjp_log('Adicionando WhatsApp ao menu', 'info', [
+        'theme_location' => isset($args->theme_location) ? $args->theme_location : 'unknown',
+    ]);
+
+    // Validação defensiva: verifica se $args é um objeto
+    if (!is_object($args)) {
+        qjp_log('args não é objeto no filtro wp_nav_menu_items', 'warning', ['args_type' => gettype($args)]);
         return $items;
     }
 
+    // Verifica localização do menu
+    if (empty($args->theme_location) || 'primary' !== $args->theme_location) {
+        return $items;
+    }
+
+    // Obtém link do WhatsApp
     $wa_link = qjp_get_whatsapp_link();
     if (empty($wa_link)) {
         return $items;
     }
 
-    $items .= '<li class="menu-item menu-item-whatsapp desktop-whatsapp"><a href="' . esc_url($wa_link) . '" target="_blank" rel="noopener noreferrer">WhatsApp</a></li>';
+    // Construção segura do HTML
+    $whatsapp_item = sprintf(
+        '<li class="menu-item menu-item-whatsapp desktop-whatsapp"><a href="%s" target="_blank" rel="noopener noreferrer">%s</a></li>',
+        esc_url($wa_link),
+        esc_html__('WhatsApp', 'quimbanda-jp')
+    );
+
+    // Concatenação segura
+    $items = $items . $whatsapp_item;
+
+    qjp_log('WhatsApp adicionado ao menu com sucesso', 'info');
 
     return $items;
 }
@@ -759,19 +891,113 @@ function qjp_handle_manual_update_request()
 add_action('admin_post_qjp_run_theme_update', 'qjp_handle_manual_update_request');
 
 /**
- * Menu simples de updates no painel.
+ * Menu de debug/ferramentas do tema no painel.
  */
-function qjp_register_updates_submenu()
+function qjp_register_debug_submenu()
 {
+    if (!QJP_ENABLE_DEBUG || !current_user_can('manage_options')) {
+        return;
+    }
+
     add_theme_page(
-        __('Atualizações do Tema', 'quimbanda-jp'),
-        __('Atualizações do Tema', 'quimbanda-jp'),
-        'update_themes',
-        'qjp-theme-updates',
-        'qjp_render_updates_page'
+        __('Quimbanda-JP: Debug & Logs', 'quimbanda-jp'),
+        __('Debug & Logs', 'quimbanda-jp'),
+        'manage_options',
+        'qjp-debug-logs',
+        'qjp_render_debug_page'
     );
 }
-add_action('admin_menu', 'qjp_register_updates_submenu');
+add_action('admin_menu', 'qjp_register_debug_submenu');
+
+/**
+ * Processa ação de limpeza de log.
+ */
+function qjp_handle_debug_actions()
+{
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    if (!empty($_POST['qjp_clear_log'])) {
+        check_admin_referer('qjp_debug_nonce');
+        qjp_clear_debug_log();
+        wp_safe_redirect(admin_url('themes.php?page=qjp-debug-logs&msg=cleared'));
+        exit;
+    }
+}
+add_action('admin_init', 'qjp_handle_debug_actions');
+
+/**
+ * Tela de debug do tema.
+ */
+function qjp_render_debug_page()
+{
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+    $msg = !empty($_GET['msg']) ? sanitize_text_field(wp_unslash($_GET['msg'])) : '';
+    ?>
+    <div class="wrap">
+        <h1><?php esc_html_e('Quimbanda-JP: Debug & Logs', 'quimbanda-jp'); ?></h1>
+        <p><?php esc_html_e('Visualize e gerencie os arquivos de log do tema.', 'quimbanda-jp'); ?></p>
+
+        <?php if ('cleared' === $msg) : ?>
+            <div class="notice notice-success is-dismissible">
+                <p><?php esc_html_e('Log limpado com sucesso!', 'quimbanda-jp'); ?></p>
+            </div>
+        <?php endif; ?>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2><?php esc_html_e('Arquivo de Log', 'quimbanda-jp'); ?></h2>
+            <p>
+                <strong><?php esc_html_e('Localização:', 'quimbanda-jp'); ?></strong>
+                <code><?php echo esc_html(QJP_DEBUG_LOG_FILE); ?></code>
+            </p>
+
+            <form method="post" action="">
+                <?php wp_nonce_field('qjp_debug_nonce'); ?>
+                <button type="submit" name="qjp_clear_log" class="button button-secondary" onclick="return confirm('<?php esc_attr_e('Tem certeza que deseja limpar o log?', 'quimbanda-jp'); ?>')">
+                    <?php esc_html_e('Limpar Log', 'quimbanda-jp'); ?>
+                </button>
+            </form>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2><?php esc_html_e('Conteúdo do Log', 'quimbanda-jp'); ?></h2>
+            <pre style="background: #f1f1f1; padding: 15px; border-radius: 5px; max-height: 600px; overflow-y: auto; font-size: 12px;">
+<?php echo esc_html(qjp_get_debug_log()); ?>
+            </pre>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h2><?php esc_html_e('Informações do Sistema', 'quimbanda-jp'); ?></h2>
+            <ul>
+                <li><strong><?php esc_html_e('Versão do WordPress:', 'quimbanda-jp'); ?></strong> <?php echo esc_html(get_bloginfo('version')); ?></li>
+                <li><strong><?php esc_html_e('Versão do PHP:', 'quimbanda-jp'); ?></strong> <?php echo esc_html(PHP_VERSION); ?></li>
+                <li><strong><?php esc_html_e('Versão do Tema:', 'quimbanda-jp'); ?></strong> <?php echo esc_html(wp_get_theme()->get('Version')); ?></li>
+                <li><strong><?php esc_html_e('Debug Ativado:', 'quimbanda-jp'); ?></strong> <?php echo QJP_ENABLE_DEBUG ? esc_html__('Sim', 'quimbanda-jp') : esc_html__('Não', 'quimbanda-jp'); ?></li>
+                <li><strong><?php esc_html_e('Modo de Debug do WordPress:', 'quimbanda-jp'); ?></strong> <?php echo defined('WP_DEBUG') && WP_DEBUG ? esc_html__('Ativado', 'quimbanda-jp') : esc_html__('Desativado', 'quimbanda-jp'); ?></li>
+            </ul>
+        </div>
+
+        <div class="card" style="margin-top: 20px; background: #fff3cd; border-color: #ffc107; border-left: 4px solid #ffc107;">
+            <h3><?php esc_html_e('⚠️ Ativar Debug', 'quimbanda-jp'); ?></h3>
+            <p><?php esc_html_e('Para ativar o debug completo do tema, adicione ao wp-config.php:', 'quimbanda-jp'); ?></p>
+            <code style="display: block; background: #f1f1f1; padding: 10px; border-radius: 3px; margin-top: 10px;">
+define( 'WP_DEBUG', true );
+            </code>
+        </div>
+    </div>
+    <?php
+}
+
+/**
+ * Registro de Hooks adicionado seguro para evitar erros de REST API.
+ */
+add_action('admin_notices', 'qjp_theme_update_admin_notice');
 
 /**
  * Tela de atualização do tema.
@@ -826,6 +1052,8 @@ function qjp_theme_update_admin_notice()
     if (!current_user_can('update_themes')) {
         return;
     }
+
+    qjp_log('Verificando avisos de atualização', 'info');
 
     $update_info = get_option('qjp_theme_update_info', []);
     if (!empty($update_info['has_update']) && !empty($update_info['remote_version'])) {
