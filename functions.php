@@ -117,6 +117,60 @@ function qjp_check_plugin_conflicts()
 add_action('admin_init', 'qjp_check_plugin_conflicts', 100);
 
 /**
+ * =============================
+ * Sanitização de Output para REST API
+ * =============================
+ *
+ * Estas funções garantem que nenhum output não intencional
+ * seja gerado durante chamadas de REST API, o que causaria
+ * "JSON inválido" em respostas.
+ */
+
+/**
+ * Detecta se estamos em uma requisição REST API.
+ *
+ * @return bool True se for REST API.
+ */
+function qjp_is_rest_request()
+{
+    // Método 1: Verificar definido (disponível em WP 4.4+)
+    if (defined('REST_REQUEST') && REST_REQUEST) {
+        return true;
+    }
+
+    // Método 2: Verificar $_SERVER REQUEST_URI
+    // phpcs:ignore WordPress.Security.ValidatedInput.InputNotSanitized
+    if (!empty($_SERVER['REQUEST_URI'])) {
+        // phpcs:ignore WordPress.Security.ValidatedInput.InputNotSanitized
+        $request_uri = wp_unslash($_SERVER['REQUEST_URI']);
+        if (false !== strpos($request_uri, '/wp-json/')) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Registra tentativa de output durante requisição REST.
+ *
+ * Útil para debug de plugins que geram output indesejado.
+ */
+function qjp_log_rest_output()
+{
+    if (!qjp_is_rest_request()) {
+        return;
+    }
+
+    qjp_log('Detectada requisição REST API', 'info', [
+        'rest_request' => defined('REST_REQUEST') ? REST_REQUEST : false,
+        // phpcs:ignore WordPress.Security.ValidatedInput.InputNotSanitized
+        'request_uri' => !empty($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : 'unknown',
+    ]);
+}
+add_action('init', 'qjp_log_rest_output', 5);
+
+/**
  * Configurações iniciais do tema.
  */
 function qjp_theme_setup()
