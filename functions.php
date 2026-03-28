@@ -7,6 +7,11 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+$qjp_block_patterns_file = get_template_directory() . '/inc/block-patterns.php';
+if (file_exists($qjp_block_patterns_file)) {
+    require_once $qjp_block_patterns_file;
+}
+
 /**
  * =============================
  * Sistema de Debug e Logging
@@ -200,6 +205,7 @@ function qjp_theme_setup()
     add_theme_support('wp-block-styles');
     add_theme_support('responsive-embeds');
     add_theme_support('align-wide');
+    add_theme_support('editor-styles');
 
     register_nav_menus([
         'primary' => __('Menu Principal', 'quimbanda-jp'),
@@ -217,6 +223,16 @@ function qjp_widgets_init()
         'id'            => 'sidebar-1',
         'description'   => __('Área de widgets principal para plugins e blocos.', 'quimbanda-jp'),
         'before_widget' => '<section id="%1$s" class="widget footer-block %2$s">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h3 class="widget-title">',
+        'after_title'   => '</h3>',
+    ]);
+
+    register_sidebar([
+        'name'          => __('Unidades / Endereços (Rodapé)', 'quimbanda-jp'),
+        'id'            => 'footer-addresses',
+        'description'   => __('Widgets para listar múltiplos endereços no rodapé.', 'quimbanda-jp'),
+        'before_widget' => '<section id="%1$s" class="widget footer-block footer-addresses-widget %2$s">',
         'after_widget'  => '</section>',
         'before_title'  => '<h3 class="widget-title">',
         'after_title'   => '</h3>',
@@ -262,6 +278,24 @@ function qjp_sanitize_bio($value)
     }
 
     return $value;
+}
+
+/**
+ * Sanitiza texto em múltiplas linhas para uso em listas (endereços/unidades).
+ */
+function qjp_sanitize_multiline_text($value)
+{
+    $value = (string) $value;
+    $value = str_replace(["\r\n", "\r"], "\n", $value);
+    $lines = array_filter(array_map('trim', explode("\n", $value)));
+
+    if (empty($lines)) {
+        return '';
+    }
+
+    $lines = array_map('sanitize_text_field', $lines);
+
+    return implode("\n", $lines);
 }
 
 /**
@@ -504,6 +538,19 @@ function qjp_customize_register($wp_customize)
         'type'     => 'text',
         'section'  => 'qjp_footer_section',
         'settings' => 'qjp_footer_address',
+    ]);
+
+    $wp_customize->add_setting('qjp_footer_addresses', [
+        'default'           => '',
+        'sanitize_callback' => 'qjp_sanitize_multiline_text',
+    ]);
+
+    $wp_customize->add_control('qjp_footer_addresses_control', [
+        'label'       => __('Múltiplos Endereços / Unidades', 'quimbanda-jp'),
+        'description' => __('Insira um endereço por linha para listar várias unidades no rodapé.', 'quimbanda-jp'),
+        'type'        => 'textarea',
+        'section'     => 'qjp_footer_section',
+        'settings'    => 'qjp_footer_addresses',
     ]);
 
     $wp_customize->add_setting('qjp_footer_phone', [
@@ -767,6 +814,16 @@ function qjp_unschedule_weekly_update_check()
 add_action('switch_theme', 'qjp_unschedule_weekly_update_check');
 
 /**
+ * Retorna se a atualização automática via GitHub está habilitada pelo usuário.
+ *
+ * @return bool
+ */
+function qjp_is_auto_update_enabled()
+{
+    return (bool) get_option('qjp_theme_auto_update_enabled', false);
+}
+
+/**
  * Checa atualização semanal e aplica update seguro automaticamente.
  */
 function qjp_weekly_update_worker()
@@ -774,7 +831,7 @@ function qjp_weekly_update_worker()
     qjp_check_theme_update();
     $update_info = get_option('qjp_theme_update_info', []);
 
-    if (!empty($update_info['has_update'])) {
+    if (!empty($update_info['has_update']) && qjp_is_auto_update_enabled()) {
         qjp_perform_safe_theme_update(false);
     }
 }
@@ -1037,6 +1094,74 @@ function qjp_handle_manual_update_request()
 add_action('admin_post_qjp_run_theme_update', 'qjp_handle_manual_update_request');
 
 /**
+ * Ação manual: somente verificar atualização agora.
+ */
+function qjp_handle_manual_check_update_request()
+{
+    if (!current_user_can('update_themes')) {
+        wp_die(esc_html__('Permissão negada.', 'quimbanda-jp'));
+    }
+
+    check_admin_referer('qjp_check_theme_update_now');
+
+    qjp_check_theme_update();
+    update_option('qjp_theme_update_notice', [
+        'type'    => 'info',
+        'message' => __('Verificação concluída com sucesso.', 'quimbanda-jp'),
+    ], false);
+
+    wp_safe_redirect(admin_url('themes.php?page=qjp-theme-updates'));
+    exit;
+}
+add_action('admin_post_qjp_check_theme_update_now', 'qjp_handle_manual_check_update_request');
+
+/**
+ * Salva preferência de atualização automática via GitHub.
+ */
+function qjp_handle_auto_update_settings_request()
+{
+    if (!current_user_can('update_themes')) {
+        wp_die(esc_html__('Permissão negada.', 'quimbanda-jp'));
+    }
+
+    check_admin_referer('qjp_save_auto_update_settings');
+
+    // phpcs:ignore WordPress.Security.NonceVerification.Missing
+    $enabled = !empty($_POST['qjp_theme_auto_update_enabled']);
+    update_option('qjp_theme_auto_update_enabled', $enabled, false);
+
+    update_option('qjp_theme_update_notice', [
+        'type'    => 'success',
+        'message' => $enabled
+            ? __('Atualização automática semanal habilitada.', 'quimbanda-jp')
+            : __('Atualização automática semanal desabilitada.', 'quimbanda-jp'),
+    ], false);
+
+    wp_safe_redirect(admin_url('themes.php?page=qjp-theme-updates'));
+    exit;
+}
+add_action('admin_post_qjp_save_auto_update_settings', 'qjp_handle_auto_update_settings_request');
+
+/**
+ * Menu de atualizações do tema.
+ */
+function qjp_register_updates_submenu()
+{
+    if (!current_user_can('update_themes')) {
+        return;
+    }
+
+    add_theme_page(
+        __('Quimbanda-JP: Atualizações', 'quimbanda-jp'),
+        __('Atualizações Quimbanda-JP', 'quimbanda-jp'),
+        'update_themes',
+        'qjp-theme-updates',
+        'qjp_render_updates_page'
+    );
+}
+add_action('admin_menu', 'qjp_register_updates_submenu');
+
+/**
  * Menu de debug/ferramentas do tema no painel.
  */
 function qjp_register_debug_submenu()
@@ -1157,6 +1282,7 @@ function qjp_render_updates_page()
     qjp_check_theme_update();
     $update_info = get_option('qjp_theme_update_info', []);
     $theme       = wp_get_theme();
+    $auto_update = qjp_is_auto_update_enabled();
     ?>
     <div class="wrap">
         <h1><?php esc_html_e('Atualizações do Quimbanda-JP', 'quimbanda-jp'); ?></h1>
@@ -1169,12 +1295,35 @@ function qjp_render_updates_page()
             <?php echo esc_html(!empty($update_info['remote_version']) ? $update_info['remote_version'] : __('não encontrada', 'quimbanda-jp')); ?>
         </p>
 
+        <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="margin:16px 0; padding:12px; background:#fff; border:1px solid #dcdcde; border-radius:6px;">
+            <?php wp_nonce_field('qjp_save_auto_update_settings'); ?>
+            <input type="hidden" name="action" value="qjp_save_auto_update_settings">
+            <label>
+                <input type="checkbox" name="qjp_theme_auto_update_enabled" value="1" <?php checked($auto_update); ?>>
+                <?php esc_html_e('Permitir atualização automática semanal quando houver nova versão no GitHub.', 'quimbanda-jp'); ?>
+            </label>
+            <p style="margin-top:10px;">
+                <button type="submit" class="button button-secondary"><?php esc_html_e('Salvar preferência', 'quimbanda-jp'); ?></button>
+            </p>
+        </form>
+
+        <p>
+            <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=qjp_check_theme_update_now'), 'qjp_check_theme_update_now')); ?>" class="button">
+                <?php esc_html_e('Verificar atualizações agora', 'quimbanda-jp'); ?>
+            </a>
+        </p>
+
         <?php if (!empty($update_info['has_update'])) : ?>
             <p>
                 <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin-post.php?action=qjp_run_theme_update'), 'qjp_run_theme_update')); ?>" class="button button-primary">
                     <?php esc_html_e('Atualizar agora (com backup automático)', 'quimbanda-jp'); ?>
                 </a>
             </p>
+            <?php if ($auto_update) : ?>
+                <p><?php esc_html_e('A atualização automática semanal está habilitada para novas versões.', 'quimbanda-jp'); ?></p>
+            <?php else : ?>
+                <p><?php esc_html_e('A atualização automática semanal está desabilitada. Use o botão acima para atualizar manualmente.', 'quimbanda-jp'); ?></p>
+            <?php endif; ?>
         <?php else : ?>
             <p><?php esc_html_e('Seu tema já está atualizado.', 'quimbanda-jp'); ?></p>
         <?php endif; ?>
@@ -1204,9 +1353,14 @@ function qjp_theme_update_admin_notice()
     $update_info = get_option('qjp_theme_update_info', []);
     if (!empty($update_info['has_update']) && !empty($update_info['remote_version'])) {
         $update_url = wp_nonce_url(admin_url('admin-post.php?action=qjp_run_theme_update'), 'qjp_run_theme_update');
+        $updates_page = admin_url('themes.php?page=qjp-theme-updates');
+        $auto_update  = qjp_is_auto_update_enabled();
         echo '<div class="notice notice-warning"><p>';
         echo esc_html__('Há uma nova versão do tema Quimbanda-JP disponível:', 'quimbanda-jp') . ' <strong>' . esc_html($update_info['remote_version']) . '</strong>. ';
         echo '<a class="button button-primary" href="' . esc_url($update_url) . '">' . esc_html__('Atualizar com backup automático', 'quimbanda-jp') . '</a>';
+        if ($auto_update) {
+            echo ' <a class="button" href="' . esc_url($updates_page) . '">' . esc_html__('Gerenciar autoatualização semanal', 'quimbanda-jp') . '</a>';
+        }
         echo '</p></div>';
     }
 

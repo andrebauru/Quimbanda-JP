@@ -4,8 +4,8 @@ Theme Name: Quimbanda-JP
 Theme URI: https://andretsc.dev
 Author: Andre Silva TsC
 Author URI: https://andretsc.dev
-Description: Tema WordPress personalizado Quimbanda-JP com foco em SEO técnico, performance, acessibilidade e identidade visual exclusiva.
-Version: 1.2.3
+Description: Tema WordPress Quimbanda-JP para espiritualidade do Axé com visual moderno, SEO técnico, performance, acessibilidade e compatibilidade com plugins.
+Version: 1.2.7
 License: GNU General Public License v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: quimbanda-jp
@@ -22,6 +22,8 @@ Tags: wordpress, tema, seo, acessibilidade, performance, custom-theme
     --qjp-bg: #121212;
     --qjp-text: #E0E0E0;
     --qjp-accent: #8B0000;
+    --qjp-gold: #d4af37;
+    --qjp-light: #f5f5f5;
     --qjp-link: #ff6b6b;
     --qjp-surface: #1a1a1a;
     --qjp-block: #1a1a1a;
@@ -161,6 +163,7 @@ h6,
     background: transparent;
     border: 0;
     box-shadow: none;
+    mix-blend-mode: multiply;
 }
 
 .site-title {
@@ -213,7 +216,17 @@ h6,
     list-style: none;
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+.main-nav {
+    max-width: 100%;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
 }
 
 .main-nav a {
@@ -264,6 +277,15 @@ h6,
 
 .post-content {
     padding: 1rem;
+}
+
+.qjp-axe-page .qjp-axe-section + .qjp-axe-section {
+    border-top: 1px solid var(--qjp-border);
+}
+
+.qjp-axe-item h3 {
+    margin: 0.5rem 0 0;
+    color: var(--qjp-light);
 }
 
 .post-meta {

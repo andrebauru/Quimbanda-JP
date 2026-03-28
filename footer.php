@@ -9,9 +9,12 @@ if (!defined('ABSPATH')) {
 
 $bio      = get_theme_mod('qjp_footer_bio', '');
 $address  = get_theme_mod('qjp_footer_address', '');
+$addresses_raw = get_theme_mod('qjp_footer_addresses', '');
 $phone    = get_theme_mod('qjp_footer_phone', '');
 $hours    = get_theme_mod('qjp_footer_hours', '');
 $wa_link  = function_exists('qjp_get_whatsapp_link') ? qjp_get_whatsapp_link() : '';
+
+$addresses = array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $addresses_raw)));
 
 $latest_post = get_posts([
     'posts_per_page' => 1,
@@ -30,6 +33,16 @@ $latest_post = get_posts([
             <h3 id="footer-info-title"><?php esc_html_e('Info', 'quimbanda-jp'); ?></h3>
             <ul>
                 <li><strong><?php esc_html_e('Endereço:', 'quimbanda-jp'); ?></strong> <?php echo $address ? esc_html($address) : '-'; ?></li>
+                <?php if (!empty($addresses)) : ?>
+                    <li>
+                        <strong><?php esc_html_e('Unidades:', 'quimbanda-jp'); ?></strong>
+                        <ul>
+                            <?php foreach ($addresses as $unit_address) : ?>
+                                <li><?php echo esc_html($unit_address); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </li>
+                <?php endif; ?>
                 <li>
                     <strong><?php esc_html_e('Telefone:', 'quimbanda-jp'); ?></strong>
                     <?php
@@ -60,6 +73,13 @@ $latest_post = get_posts([
                 <p><?php esc_html_e('Ainda não há posts publicados.', 'quimbanda-jp'); ?></p>
             <?php endif; ?>
         </aside>
+
+        <?php if (is_active_sidebar('footer-addresses')) : ?>
+            <aside class="footer-block footer-units" aria-labelledby="footer-units-title">
+                <h3 id="footer-units-title"><?php esc_html_e('Magazines / Unidades', 'quimbanda-jp'); ?></h3>
+                <?php dynamic_sidebar('footer-addresses'); ?>
+            </aside>
+        <?php endif; ?>
     </div>
 </section>
 
